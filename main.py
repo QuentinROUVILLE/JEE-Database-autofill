@@ -5,12 +5,14 @@
 # 4. Database host
 # 5. Database port
 # 6. GoogleMaps API key
+import random
 
 import psycopg2
 import sys
 import json
 import time
 from urllib.request import urlopen
+from meals import meals
 
 db_name = sys.argv[1]
 db_user = sys.argv[2]
@@ -49,10 +51,19 @@ for page in range(0, max_pages):
 
         cursor.execute("SELECT id FROM location WHERE latitude = %s AND longitude = %s",
                        (place['geometry']['location']['lat'], place['geometry']['location']['lng']))
-
         cursor.execute("INSERT INTO restaurant (name, location_id) VALUES (%s, %s)",
                        (place['name'], cursor.fetchone()[0]))
+
+        cursor.execute("SELECT id FROM restaurant WHERE name = %s", (place['name'],))
+        restaurant_id = cursor.fetchone()[0]
+        for meal in range(0, 3):
+            random_meal = meals[int(random.uniform(0, len(meals) - 1))]
+            print(random_meal)
+            cursor.execute("INSERT INTO meal (name, price, restaurant_id) VALUES (%s, %s, %s)", (random_meal['name'], random.uniform(random_meal['minprice'], random_meal['maxprice']), restaurant_id))
+
         postgres.commit()
+
+        print("Inserted location: " + str(place['geometry']['location']['lat']) + "," + str(place['geometry']['location']['lng']))
 
     if next_page_token == "" or page == max_pages - 1:
         break

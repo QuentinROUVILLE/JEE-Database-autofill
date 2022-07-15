@@ -9,6 +9,7 @@
 import psycopg2
 import sys
 import json
+import time
 from urllib.request import urlopen
 
 db_name = sys.argv[1]
@@ -17,6 +18,7 @@ db_password = sys.argv[3]
 db_host = sys.argv[4]
 db_port = sys.argv[5]
 gmap_api_key = sys.argv[6]
+max_pages = 3
 
 postgres = psycopg2.connect(
     database=db_name,
@@ -29,7 +31,7 @@ postgres = psycopg2.connect(
 cursor = postgres.cursor()
 next_page_token = ""
 
-for page in range(0, 3):
+for page in range(0, max_pages):
     url = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=48.858705,2.342865&radius=3000&type=restaurant&key=' + gmap_api_key + '&pagetoken=' + next_page_token
     response = urlopen(url)
 
@@ -52,7 +54,8 @@ for page in range(0, 3):
                        (place['name'], cursor.fetchone()[0]))
         postgres.commit()
 
-    if next_page_token == "":
+    if next_page_token == "" or page == max_pages - 1:
         break
+    time.sleep(3)
 
 print("Tout s'est très bien passé !")

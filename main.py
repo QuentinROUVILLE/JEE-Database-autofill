@@ -27,5 +27,13 @@ postgres = psycopg2.connect(
 )
 
 cursor = postgres.cursor()
-cursor.execute("INSERT INTO location VALUES (4, 4.0, 2.0);")
+
+url = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=48.858705,2.342865&radius=3000&type=restaurant&key='+gmap_api_key
+response = urlopen(url)
+
+string = response.read().decode('utf-8')
+json_obj = json.loads(string)
+
+print(json_obj)
+
 postgres.commit()

@@ -27,20 +27,32 @@ postgres = psycopg2.connect(
 )
 
 cursor = postgres.cursor()
+next_page_token = ""
 
-url = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=48.858705,2.342865&radius=3000&type=restaurant&key='+gmap_api_key
-response = urlopen(url)
+for page in range(0, 3):
+    url = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=48.858705,2.342865&radius=3000&type=restaurant&key=' + gmap_api_key + '&pagetoken=' + next_page_token
+    response = urlopen(url)
 
-string = response.read().decode('utf-8')
-json_obj = json.loads(string)
+    string = response.read().decode('utf-8')
+    json_obj = json.loads(string)
 
-print(json_obj)
+    try:
+        next_page_token = json_obj['next_page_token']
+    except KeyError:
+        next_page_token = ""
 
-for place in json_obj['results']:
-    cursor.execute("INSERT INTO location (latitude, longitude) VALUES (%s, %s)", (place['geometry']['location']['lat'], place['geometry']['location']['lng']))
+    for place in json_obj['results']:
+        cursor.execute("INSERT INTO location (latitude, longitude) VALUES (%s, %s)",
+                       (place['geometry']['location']['lat'], place['geometry']['location']['lng']))
 
-    cursor.execute("SELECT id FROM location WHERE latitude = %s AND longitude = %s", (place['geometry']['location']['lat'], place['geometry']['location']['lng']))
+        cursor.execute("SELECT id FROM location WHERE latitude = %s AND longitude = %s",
+                       (place['geometry']['location']['lat'], place['geometry']['location']['lng']))
 
-    cursor.execute("INSERT INTO restaurant (name, location_id) VALUES (%s, %s)", (place['name'], cursor.fetchone()[0]))
-    postgres.commit()
-    print(place['name'])
+        cursor.execute("INSERT INTO restaurant (name, location_id) VALUES (%s, %s)",
+                       (place['name'], cursor.fetchone()[0]))
+        postgres.commit()
+
+    if next_page_token == "":
+        break
+
+print("Tout s'est très bien passé !")

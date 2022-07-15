@@ -36,4 +36,11 @@ json_obj = json.loads(string)
 
 print(json_obj)
 
-postgres.commit()
+for place in json_obj['results']:
+    cursor.execute("INSERT INTO location (latitude, longitude) VALUES (%s, %s)", (place['geometry']['location']['lat'], place['geometry']['location']['lng']))
+
+    cursor.execute("SELECT id FROM location WHERE latitude = %s AND longitude = %s", (place['geometry']['location']['lat'], place['geometry']['location']['lng']))
+
+    cursor.execute("INSERT INTO restaurant (name, location_id) VALUES (%s, %s)", (place['name'], cursor.fetchone()[0]))
+    postgres.commit()
+    print(place['name'])
